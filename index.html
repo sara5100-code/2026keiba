@@ -1,3 +1,334 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026年 競馬共同購入</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useMemo, useEffect } = React;
+        
+        const ChevronDown = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"></polyline></svg>;
+        const ChevronUp = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="18 15 12 9 6 15"></polyline></svg>;
+        const Download = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>;
+        const Save = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>;
+
+        const HorseBettingTracker = () => {
+          const [showDetails, setShowDetails] = useState(false);
+          const [showRaces, setShowRaces] = useState(false);
+          const [lastSaved, setLastSaved] = useState(null);
+
+          const initialRaces = [
+            { date: '2026/1/11', race: 'フェアリーS(中山)', commander: '鈴木', buyer: '鈴木', investment: 3000, payout: 0, isSpecial: false },
+            { date: '2026/1/18', race: '京成杯(中山)', commander: '中山', buyer: '越野', investment: 3000, payout: 0, isSpecial: false },
+            { date: '2026/1/25', race: 'AJCC(中山)', commander: '越野', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/2/1', race: '根岸S(東京)', commander: '鈴木', buyer: '鈴木', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/2/8', race: '東京新聞杯(東京)', commander: '中山', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/2/15', race: '京都記念(京都)', commander: '越野', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/2/22', race: 'フェブラリーS(東京)', commander: '鈴木', buyer: '鈴木', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/3/1', race: '中山記念(中山)', commander: '中山', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/3/8', race: '弥生賞(中山)', commander: '越野', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/3/15', race: '金鯱賞(中京)', commander: '鈴木', buyer: '鈴木', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/3/22', race: 'スプリングS(中山)', commander: '中山', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/3/29', race: '高松宮記念(中京)', commander: '越野', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/4/5', race: '大阪杯(阪神)', commander: '鈴木', buyer: '鈴木', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/4/12', race: '桜花賞(阪神)', commander: '中山', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/4/19', race: '皐月賞(中山)', commander: '越野', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/4/26', race: 'マイラーズC(京都)', commander: '鈴木', buyer: '鈴木', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/5/3', race: '天皇賞春(京都)', commander: '中山', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/5/10', race: 'NHKマイルC(東京)', commander: '越野', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/5/17', race: 'ヴィクトリアマイル(東京)', commander: '鈴木', buyer: '鈴木', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/5/24', race: 'オークス(東京)', commander: '中山', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/5/31', race: '日本ダービー(中山)', commander: '中山', buyer: '中山', investment: 0, payout: 0, isSpecial: true },
+            { date: '2026/5/31', race: '日本ダービー(越野)', commander: '越野', buyer: '越野', investment: 0, payout: 0, isSpecial: true },
+            { date: '2026/5/31', race: '日本ダービー(鈴木)', commander: '鈴木', buyer: '鈴木', investment: 0, payout: 0, isSpecial: true },
+            { date: '2026/6/7', race: '安田記念(東京)', commander: '越野', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/6/14', race: 'エプソムC(東京)', commander: '鈴木', buyer: '鈴木', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/6/21', race: '宝塚記念(阪神)', commander: '中山', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/6/28', race: 'ユニコーンS(東京)', commander: '越野', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/7/5', race: 'ラジオNIKKEI(福島)', commander: '鈴木', buyer: '鈴木', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/7/12', race: 'プロキオンS(中京)', commander: '中山', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/7/19', race: '函館記念(函館)', commander: '越野', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/7/26', race: 'クイーンS(札幌)', commander: '鈴木', buyer: '鈴木', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/8/2', race: '小倉記念(小倉)', commander: '中山', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/8/9', race: '関屋記念(新潟)', commander: '越野', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/8/16', race: '札幌記念(札幌)', commander: '鈴木', buyer: '鈴木', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/8/23', race: 'キーンランドC(札幌)', commander: '中山', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/8/30', race: '新潟2歳S(新潟)', commander: '越野', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/9/6', race: '小倉2歳S(小倉)', commander: '鈴木', buyer: '鈴木', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/9/13', race: 'セントライト(中山)', commander: '中山', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/9/20', race: '神戸新聞杯(阪神)', commander: '越野', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/9/27', race: 'オールカマー(中山)', commander: '鈴木', buyer: '鈴木', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/10/4', race: 'スプリンターズS(中山)', commander: '中山', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/10/11', race: '毎日王冠(東京)', commander: '越野', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/10/18', race: '秋華賞(京都)', commander: '鈴木', buyer: '鈴木', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/10/25', race: '菊花賞(京都)', commander: '中山', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/11/1', race: '天皇賞秋(東京)', commander: '越野', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/11/8', race: 'アルゼンチン共和国杯(東京)', commander: '鈴木', buyer: '鈴木', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/11/15', race: 'エリザベス女王杯(京都)', commander: '中山', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/11/22', race: 'マイルCS(京都)', commander: '越野', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/11/29', race: 'ジャパンC(東京)', commander: '鈴木', buyer: '鈴木', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/12/6', race: 'チャンピオンズC(中京)', commander: '中山', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/12/13', race: '阪神JF(阪神)', commander: '越野', buyer: '越野', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/12/20', race: '朝日杯FS(阪神)', commander: '鈴木', buyer: '鈴木', investment: 0, payout: 0, isSpecial: false },
+            { date: '2026/12/27', race: '有馬記念(中山)', commander: '中山', buyer: '中山', investment: 0, payout: 0, isSpecial: true },
+            { date: '2026/12/27', race: '有馬記念(越野)', commander: '越野', buyer: '越野', investment: 0, payout: 0, isSpecial: true },
+            { date: '2026/12/27', race: '有馬記念(鈴木)', commander: '鈴木', buyer: '鈴木', investment: 0, payout: 0, isSpecial: true },
+          ];
+
+          const loadSavedData = () => {
+            try {
+              const saved = localStorage.getItem('keiba_races_2026');
+              if (saved) return JSON.parse(saved);
+            } catch (e) {
+              console.error('データ読み込みエラー:', e);
+            }
+            return initialRaces;
+          };
+
+          const [races, setRaces] = useState(loadSavedData);
+
+          useEffect(() => {
+            try {
+              localStorage.setItem('keiba_races_2026', JSON.stringify(races));
+              setLastSaved(new Date());
+            } catch (e) {
+              console.error('データ保存エラー:', e);
+            }
+          }, [races]);
+
+          const stats = useMemo(() => {
+            const result = {
+              '中山': { normalPurchases: 0, specialPurchases: 0, contribution: 0, received: 0, advancedPayment: 0, holdingPayout: 0, settlement: 0 },
+              '越野': { normalPurchases: 0, specialPurchases: 0, contribution: 0, received: 0, advancedPayment: 0, holdingPayout: 0, settlement: 0 },
+              '鈴木': { normalPurchases: 0, specialPurchases: 0, contribution: 0, received: 0, advancedPayment: 0, holdingPayout: 0, settlement: 0 }
+            };
+
+            races.forEach(race => {
+              if (race.isSpecial) {
+                result[race.buyer].specialPurchases++;
+              } else {
+                result[race.buyer].normalPurchases++;
+              }
+              result[race.buyer].advancedPayment += race.investment;
+              if (race.payout > 0) {
+                result[race.buyer].holdingPayout += race.payout;
+              }
+            });
+
+            const totalInvestment = races.reduce((sum, r) => sum + r.investment, 0);
+            const totalAllPayout = races.reduce((sum, r) => sum + r.payout, 0);
+            
+            ['中山', '越野', '鈴木'].forEach(person => {
+              result[person].contribution = totalInvestment / 3;
+              result[person].received = totalAllPayout / 3;
+              result[person].settlement = result[person].received - result[person].contribution - result[person].holdingPayout + result[person].advancedPayment;
+            });
+
+            return result;
+          }, [races]);
+
+          const updateRace = (index, field, value) => {
+            const newRaces = [...races];
+            if (field === 'investment' || field === 'payout') {
+              newRaces[index] = { ...newRaces[index], [field]: parseInt(value) || 0 };
+            } else {
+              newRaces[index] = { ...newRaces[index], [field]: value };
+            }
+            setRaces(newRaces);
+          };
+
+          const exportToCSV = () => {
+            let csv = '日付,レース名,指揮者,購入者,投資金額,的中金額\n';
+            races.forEach(race => {
+              csv += `${race.date},${race.race},${race.commander},${race.buyer},${race.investment},${race.payout}\n`;
+            });
+            
+            csv += '\n年末清算\n';
+            csv += '氏名,購入金額,預当額,負担金,配当受取,清算額\n';
+            ['中山', '越野', '鈴木'].forEach(person => {
+              const s = stats[person];
+              csv += `${person},${s.advancedPayment},${s.holdingPayout},-${s.contribution.toFixed(0)},${s.received.toFixed(0)},${s.settlement >= 0 ? '受取' : '支払'}${Math.abs(s.settlement).toFixed(0)}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = '2026年競馬共同購入記録.csv';
+            link.click();
+          };
+
+          const totalPayout = races.reduce((sum, r) => sum + r.payout, 0);
+          const totalInvestment = races.reduce((sum, r) => sum + r.investment, 0);
+          const netProfit = totalPayout - totalInvestment;
+
+          return (
+            <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-2">
+              <div className="max-w-md mx-auto">
+                <div className="bg-white rounded-lg shadow p-2 mb-2">
+                  <div className="flex justify-between items-center mb-1">
+                    <h1 className="text-base font-bold text-gray-800">2026年 競馬共同購入</h1>
+                    {lastSaved && (
+                      <div className="flex items-center gap-1 text-xs text-green-600">
+                        <Save />
+                        <span>保存済</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-4 gap-1 text-xs">
+                    <div className="text-center">
+                      <div className="text-gray-600 text-xs">投資</div>
+                      <div className="font-bold text-blue-600">¥{(totalInvestment/1000).toFixed(0)}k</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-gray-600 text-xs">的中</div>
+                      <div className="font-bold text-green-600">¥{(totalPayout/1000).toFixed(0)}k</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-gray-600 text-xs">損益</div>
+                      <div className={`font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {netProfit >= 0 ? '+' : ''}¥{(netProfit/1000).toFixed(0)}k
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-gray-600 text-xs">回収率</div>
+                      <div className="font-bold text-purple-600">
+                        {totalInvestment > 0 ? ((totalPayout / totalInvestment) * 100).toFixed(0) : 0}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow p-2 mb-2">
+                  <h2 className="text-sm font-bold mb-1 text-gray-800">個人成績</h2>
+                  <div className="space-y-1">
+                    {['中山', '越野', '鈴木'].map(person => {
+                      const s = stats[person];
+                      const commandCount = races.filter(r => r.commander === person).length;
+                      const buyCount = s.normalPurchases + s.specialPurchases;
+                      const commandPayout = races.filter(r => r.commander === person).reduce((sum, r) => sum + r.payout, 0);
+                      
+                      return (
+                        <div key={person} className="flex justify-between items-center text-xs bg-gray-50 rounded p-1">
+                          <span className="font-bold w-12">{person}</span>
+                          <span className="text-gray-600">指揮{commandCount}</span>
+                          <span className="text-gray-600">購入{buyCount}</span>
+                          <span className="text-orange-600">¥{(s.advancedPayment/1000).toFixed(0)}k</span>
+                          <span className="text-blue-600">的¥{(commandPayout/1000).toFixed(0)}k</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg shadow p-2 mb-2 border border-purple-200">
+                  <h2 className="text-sm font-bold text-purple-800 mb-1">年末清算</h2>
+                  {['中山', '越野', '鈴木'].map(person => {
+                    const s = stats[person];
+                    return (
+                      <div key={person} className="bg-white rounded p-2 mb-1 last:mb-0">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-sm font-bold">{person}</span>
+                          <span className={`text-base font-bold ${s.settlement >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {s.settlement >= 0 ? '受取 ' : '支払 '}¥{Math.abs(Math.round(s.settlement)).toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-1 text-xs text-gray-600">
+                          <div className="text-center">
+                            <div className="text-xs">購入</div>
+                            <div className="font-semibold text-orange-600">¥{(s.advancedPayment/1000).toFixed(0)}k</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-xs">預り</div>
+                            <div className="font-semibold text-blue-600">¥{(s.holdingPayout/1000).toFixed(0)}k</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-xs">負担</div>
+                            <div className="font-semibold text-red-600">¥{(s.contribution/1000).toFixed(0)}k</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-xs">配当</div>
+                            <div className="font-semibold text-green-600">¥{(s.received/1000).toFixed(0)}k</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="bg-white rounded-lg shadow p-2 mb-2">
+                  <button
+                    onClick={() => setShowDetails(!showDetails)}
+                    className="w-full flex justify-between items-center text-sm font-bold"
+                  >
+                    <span>詳細統計</span>
+                    {showDetails ? <ChevronUp /> : <ChevronDown />}
+                  </button>
+                  {showDetails && (
+                    <div className="mt-2 text-xs">
+                      {['中山', '越野', '鈴木'].map(person => {
+                        const s = stats[person];
+                        const balance = s.received - s.contribution;
+                        return (
+                          <div key={person} className="flex justify-between py-1 border-t">
+                            <span className="font-bold">{person}</span>
+                            <span>通常{s.normalPurchases} 特別{s.specialPurchases}</span>
+                            <span className={`font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {balance >= 0 ? '+' : ''}¥{Math.round(balance).toLocaleString()}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-white rounded-lg shadow p-2 mb-2">
+                  <button
+                    onClick={() => setShowRaces(!showRaces)}
+                    className="w-full flex justify-between items-center text-sm font-bold"
+                  >
+                    <span>レース記録 ({races.length}件)</span>
+                    {showRaces ? <ChevronUp /> : <ChevronDown />}
+                  </button>
+                  {showRaces && (
+                    <div className="mt-2 max-h-96 overflow-y-auto">
+                      <table className="w-full text-xs">
+                        <thead className="sticky top-0 bg-gray-100">
+                          <tr>
+                            <th className="p-1 text-left w-20">日付</th>
+                            <th className="p-1 text-left">レース</th>
+                            <th className="p-1 w-16">指揮</th>
+                            <th className="p-1 w-16">購入</th>
+                            <th className="p-1 text-right w-14">投資</th>
+                            <th className="p-1 text-right w-14">的中</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {races.map((race, index) => (
+                            <tr key={index} className={`border-t ${race.isSpecial ? 'bg-yellow-50' : ''}`}>
+                              <td className="p-1">
+                                <input type="text" value={race.date} onChange={(e) => updateRace(index, 'date', e.target.value)} className="w-full p-0.5 border rounded text-xs" />
+                              </td>
+                              <td className="p-1">
+                                <input type="text" value={race.race} onChange={(e) => updateRace(index, 'race', e.target.value)} className="w-full p-0.5 border rounded text-xs" />
+                              </td>
+                              <td className="p-1">
+                                <select value={race.commander} onChange={(e) => updateRace(index, 'commander', e.target.value)} className="w-full p-0.5 border rounded text-xs">
+                                  <option value="中山">中山</option>
+                                  <option value="越野">越野</option>
+                                  <option value="鈴木">鈴木</option>
+                                </select>
+                              </td>
+                              <td className="p-1">
                                 <select value={race.buyer} onChange={(e) => updateRace(index, 'buyer', e.target.value)} className="w-full p-0.5 border rounded text-xs">
                                   <option value="中山">中山</option>
                                   <option value="越野">越野</option>
