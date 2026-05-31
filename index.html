@@ -73,7 +73,24 @@
         }
 
         .race-table {
-            min-width: 520px;
+            min-width: 380px;
+            table-layout: fixed;
+        }
+
+        .race-date-col {
+            width: 3.2rem;
+        }
+
+        .race-name-col {
+            width: 6.5rem;
+        }
+
+        .race-person-col {
+            width: 3.2rem;
+        }
+
+        .race-money-col {
+            width: 3.4rem;
         }
     </style>
 </head>
@@ -98,7 +115,6 @@
         };
 
         const HorseBettingTracker = () => {
-          const [showDetails, setShowDetails] = useState(false);
           const [showRaces, setShowRaces] = useState(false);
           const [lastSaved, setLastSaved] = useState(null);
 
@@ -353,33 +369,6 @@
 
                 <div className="panel p-3 mb-3">
                   <button
-                    onClick={() => setShowDetails(!showDetails)}
-                    className="w-full flex justify-between items-center text-sm font-bold text-slate-800"
-                  >
-                    <span>詳細統計</span>
-                    {showDetails ? <ChevronUp /> : <ChevronDown />}
-                  </button>
-                  {showDetails && (
-                    <div className="mt-2 text-xs">
-                      {['中山', '越野', '鈴木'].map(person => {
-                        const s = stats[person];
-                        const balance = s.received - s.contribution;
-                        return (
-                          <div key={person} className="flex justify-between py-1 border-t">
-                            <span className="font-bold">{person}</span>
-                            <span>購入{s.normalPurchases + s.specialPurchases}</span>
-                            <span className={`font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {balance >= 0 ? '+' : '-'}{formatYen(balance)}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                <div className="panel p-3 mb-3">
-                  <button
                     onClick={() => setShowRaces(!showRaces)}
                     className="w-full flex justify-between items-center text-sm font-bold text-slate-800"
                   >
@@ -389,14 +378,22 @@
                   {showRaces && (
                     <div className="mt-2 max-h-96 overflow-auto">
                       <table className="race-table w-full text-xs">
+                        <colgroup>
+                          <col className="race-date-col" />
+                          <col className="race-name-col" />
+                          <col className="race-person-col" />
+                          <col className="race-person-col" />
+                          <col className="race-money-col" />
+                          <col className="race-money-col" />
+                        </colgroup>
                         <thead className="sticky top-0 bg-gray-100">
                           <tr>
-                            <th className="p-1 text-left w-14">日付</th>
-                            <th className="p-1 text-left min-w-[7.5em]">レース</th>
-                            <th className="p-1 w-16">指揮</th>
-                            <th className="p-1 w-16">購入</th>
-                            <th className="p-1 text-right w-14">投資</th>
-                            <th className="p-1 text-right w-14">的中</th>
+                            <th className="p-1 text-left">日付</th>
+                            <th className="p-1 text-left">レース</th>
+                            <th className="p-1">指揮</th>
+                            <th className="p-1">購入</th>
+                            <th className="p-1 text-right">投資</th>
+                            <th className="p-1 text-right">的中</th>
                           </tr>
                         </thead>
                         <tbody>
