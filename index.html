@@ -51,6 +51,13 @@
             background: #f8faf8;
         }
 
+        .person-grid {
+            display: grid;
+            grid-template-columns: minmax(3rem, 1.1fr) 2.7rem 2.7rem minmax(4.2rem, 1.1fr) minmax(4.2rem, 1.1fr);
+            align-items: center;
+            column-gap: 0.25rem;
+        }
+
         .settlement-card {
             background: linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%);
             border-color: rgba(22, 163, 74, 0.2);
@@ -63,6 +70,10 @@
 
         .csv-button:hover {
             filter: brightness(1.04);
+        }
+
+        .race-table {
+            min-width: 520px;
         }
     </style>
 </head>
@@ -78,7 +89,9 @@
         const Save = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>;
 
         const formatYen = (value) => `¥${Math.abs(Math.round(value)).toLocaleString()}`;
-        const splitByThree = (value) => Math.floor(value / 3);
+        const roundDownToHundred = (value) => Math.floor(value / 100) * 100;
+        const splitByThree = (value) => roundDownToHundred(Math.floor(value / 3));
+        const formatShortDate = (date) => date.replace(/^\d{4}\//, '');
         const roundSettlementToHundred = (value) => {
           const amount = Math.floor(Math.abs(value) / 100) * 100;
           return value < 0 ? -amount : amount;
@@ -176,10 +189,13 @@
             };
 
             races.forEach(race => {
-              if (race.isSpecial) {
-                result[race.buyer].specialPurchases++;
-              } else {
-                result[race.buyer].normalPurchases++;
+              const isPurchased = race.investment > 0;
+              if (isPurchased) {
+                if (race.isSpecial) {
+                  result[race.buyer].specialPurchases++;
+                } else {
+                  result[race.buyer].normalPurchases++;
+                }
               }
               result[race.buyer].advancedPayment += race.investment;
               if (race.payout > 0) {
@@ -273,20 +289,27 @@
 
                 <div className="panel p-3 mb-3">
                   <h2 className="text-sm font-bold mb-2 text-slate-800">個人成績</h2>
+                  <div className="person-grid px-2 pb-1 text-[11px] font-bold text-slate-500">
+                    <span></span>
+                    <span className="text-center">指揮</span>
+                    <span className="text-center">購入</span>
+                    <span className="text-right">投資</span>
+                    <span className="text-right">的中</span>
+                  </div>
                   <div className="space-y-2">
                     {['中山', '越野', '鈴木'].map(person => {
                       const s = stats[person];
-                      const commandCount = races.filter(r => r.commander === person).length;
+                      const commandCount = races.filter(r => r.commander === person && r.investment > 0).length;
                       const buyCount = s.normalPurchases + s.specialPurchases;
-                      const commandPayout = races.filter(r => r.commander === person).reduce((sum, r) => sum + r.payout, 0);
-                      
+                      const commandPayout = races.filter(r => r.commander === person && r.investment > 0).reduce((sum, r) => sum + r.payout, 0);
+
                       return (
-                        <div key={person} className="person-row flex justify-between items-center text-xs rounded-xl px-2 py-2">
-                          <span className="font-bold w-12">{person}</span>
-                          <span className="text-gray-600">指揮{commandCount}</span>
-                          <span className="text-gray-600">購入{buyCount}</span>
-                          <span className="text-orange-600">{formatYen(s.advancedPayment)}</span>
-                          <span className="text-blue-600">的{formatYen(commandPayout)}</span>
+                        <div key={person} className="person-grid person-row text-xs rounded-xl px-2 py-2">
+                          <span className="font-bold">{person}</span>
+                          <span className="text-center text-gray-600">{commandCount}</span>
+                          <span className="text-center text-gray-600">{buyCount}</span>
+                          <span className="text-right text-orange-600">{formatYen(s.advancedPayment)}</span>
+                          <span className="text-right text-blue-600">{formatYen(commandPayout)}</span>
                         </div>
                       );
                     })}
@@ -344,7 +367,7 @@
                         return (
                           <div key={person} className="flex justify-between py-1 border-t">
                             <span className="font-bold">{person}</span>
-                            <span>通常{s.normalPurchases} 特別{s.specialPurchases}</span>
+                            <span>購入{s.normalPurchases + s.specialPurchases}</span>
                             <span className={`font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                               {balance >= 0 ? '+' : '-'}{formatYen(balance)}
                             </span>
@@ -364,12 +387,12 @@
                     {showRaces ? <ChevronUp /> : <ChevronDown />}
                   </button>
                   {showRaces && (
-                    <div className="mt-2 max-h-96 overflow-y-auto">
-                      <table className="w-full text-xs">
+                    <div className="mt-2 max-h-96 overflow-auto">
+                      <table className="race-table w-full text-xs">
                         <thead className="sticky top-0 bg-gray-100">
                           <tr>
-                            <th className="p-1 text-left w-20">日付</th>
-                            <th className="p-1 text-left">レース</th>
+                            <th className="p-1 text-left w-14">日付</th>
+                            <th className="p-1 text-left min-w-[7.5em]">レース</th>
                             <th className="p-1 w-16">指揮</th>
                             <th className="p-1 w-16">購入</th>
                             <th className="p-1 text-right w-14">投資</th>
@@ -380,7 +403,7 @@
                           {races.map((race, index) => (
                             <tr key={index} className={`border-t ${race.isSpecial ? 'bg-yellow-50' : ''}`}>
                               <td className="p-1">
-                                <input type="text" value={race.date} onChange={(e) => updateRace(index, 'date', e.target.value)} className="w-full p-0.5 border rounded text-xs" />
+                                <input type="text" value={formatShortDate(race.date)} onChange={(e) => updateRace(index, 'date', `2026/${e.target.value.replace(/^\d{4}\//, '')}`)} className="w-full p-0.5 border rounded text-xs" />
                               </td>
                               <td className="p-1">
                                 <input type="text" value={race.race} onChange={(e) => updateRace(index, 'race', e.target.value)} className="w-full p-0.5 border rounded text-xs" />
