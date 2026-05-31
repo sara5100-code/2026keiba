@@ -77,6 +77,13 @@
         const Download = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>;
         const Save = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>;
 
+        const formatYen = (value) => `¥${Math.abs(Math.round(value)).toLocaleString()}`;
+        const splitByThree = (value) => Math.floor(value / 3);
+        const roundSettlementToHundred = (value) => {
+          const amount = Math.floor(Math.abs(value) / 100) * 100;
+          return value < 0 ? -amount : amount;
+        };
+
         const HorseBettingTracker = () => {
           const [showDetails, setShowDetails] = useState(false);
           const [showRaces, setShowRaces] = useState(false);
@@ -184,9 +191,9 @@
             const totalAllPayout = races.reduce((sum, r) => sum + r.payout, 0);
             
             ['中山', '越野', '鈴木'].forEach(person => {
-              result[person].contribution = totalInvestment / 3;
-              result[person].received = totalAllPayout / 3;
-              result[person].settlement = result[person].received - result[person].contribution - result[person].holdingPayout + result[person].advancedPayment;
+              result[person].contribution = splitByThree(totalInvestment);
+              result[person].received = splitByThree(totalAllPayout);
+              result[person].settlement = roundSettlementToHundred(result[person].received - result[person].contribution - result[person].holdingPayout + result[person].advancedPayment);
             });
 
             return result;
@@ -212,7 +219,7 @@
             csv += '氏名,購入金額,預当額,負担金,配当受取,清算額\n';
             ['中山', '越野', '鈴木'].forEach(person => {
               const s = stats[person];
-              csv += `${person},${s.advancedPayment},${s.holdingPayout},-${s.contribution.toFixed(0)},${s.received.toFixed(0)},${s.settlement >= 0 ? '受取' : '支払'}${Math.abs(s.settlement).toFixed(0)}\n`;
+              csv += `${person},${s.advancedPayment},${s.holdingPayout},-${s.contribution},${s.received},${s.settlement >= 0 ? '受取' : '支払'}${Math.abs(s.settlement)}\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -243,16 +250,16 @@
                   <div className="grid grid-cols-4 gap-2 text-xs">
                     <div className="stat-tile text-center">
                       <div className="text-gray-600 text-xs">投資</div>
-                      <div className="font-bold text-blue-600">¥{(totalInvestment/1000).toFixed(0)}k</div>
+                      <div className="font-bold text-blue-600">{formatYen(totalInvestment)}</div>
                     </div>
                     <div className="stat-tile text-center">
                       <div className="text-gray-600 text-xs">的中</div>
-                      <div className="font-bold text-green-600">¥{(totalPayout/1000).toFixed(0)}k</div>
+                      <div className="font-bold text-green-600">{formatYen(totalPayout)}</div>
                     </div>
                     <div className="stat-tile text-center">
                       <div className="text-gray-600 text-xs">損益</div>
                       <div className={`font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {netProfit >= 0 ? '+' : ''}¥{(netProfit/1000).toFixed(0)}k
+                        {netProfit >= 0 ? '+' : '-'}{formatYen(netProfit)}
                       </div>
                     </div>
                     <div className="stat-tile text-center">
@@ -278,8 +285,8 @@
                           <span className="font-bold w-12">{person}</span>
                           <span className="text-gray-600">指揮{commandCount}</span>
                           <span className="text-gray-600">購入{buyCount}</span>
-                          <span className="text-orange-600">¥{(s.advancedPayment/1000).toFixed(0)}k</span>
-                          <span className="text-blue-600">的¥{(commandPayout/1000).toFixed(0)}k</span>
+                          <span className="text-orange-600">{formatYen(s.advancedPayment)}</span>
+                          <span className="text-blue-600">的{formatYen(commandPayout)}</span>
                         </div>
                       );
                     })}
@@ -295,25 +302,25 @@
                         <div className="flex justify-between items-center mb-1">
                           <span className="text-sm font-bold">{person}</span>
                           <span className={`text-base font-bold ${s.settlement >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {s.settlement >= 0 ? '受取 ' : '支払 '}¥{Math.abs(Math.round(s.settlement)).toLocaleString()}
+                            {s.settlement >= 0 ? '受取 ' : '支払 '}{formatYen(s.settlement)}
                           </span>
                         </div>
                         <div className="grid grid-cols-4 gap-1 text-xs text-gray-600">
                           <div className="text-center">
                             <div className="text-xs">購入</div>
-                            <div className="font-semibold text-orange-600">¥{(s.advancedPayment/1000).toFixed(0)}k</div>
+                            <div className="font-semibold text-orange-600">{formatYen(s.advancedPayment)}</div>
                           </div>
                           <div className="text-center">
                             <div className="text-xs">預り</div>
-                            <div className="font-semibold text-blue-600">¥{(s.holdingPayout/1000).toFixed(0)}k</div>
+                            <div className="font-semibold text-blue-600">{formatYen(s.holdingPayout)}</div>
                           </div>
                           <div className="text-center">
                             <div className="text-xs">負担</div>
-                            <div className="font-semibold text-red-600">¥{(s.contribution/1000).toFixed(0)}k</div>
+                            <div className="font-semibold text-red-600">{formatYen(s.contribution)}</div>
                           </div>
                           <div className="text-center">
                             <div className="text-xs">配当</div>
-                            <div className="font-semibold text-green-600">¥{(s.received/1000).toFixed(0)}k</div>
+                            <div className="font-semibold text-green-600">{formatYen(s.received)}</div>
                           </div>
                         </div>
                       </div>
@@ -339,7 +346,7 @@
                             <span className="font-bold">{person}</span>
                             <span>通常{s.normalPurchases} 特別{s.specialPurchases}</span>
                             <span className={`font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {balance >= 0 ? '+' : ''}¥{Math.round(balance).toLocaleString()}
+                              {balance >= 0 ? '+' : '-'}{formatYen(balance)}
                             </span>
                           </div>
                         );
