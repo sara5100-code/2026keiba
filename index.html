@@ -88,8 +88,10 @@
         }
 
         .race-values {
-            grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
+
+        .race-name { grid-column: 1 / -1; }
 
         .race-record label {
             display: block;
@@ -98,7 +100,7 @@
             font-size: 12px;
         }
 
-        .race-record input, .race-record select, .race-record textarea {
+        .race-record input, .race-record select {
             display: block;
             box-sizing: border-box;
             width: 100%;
@@ -114,18 +116,12 @@
             line-height: 24px;
         }
 
-        .race-record textarea {
-            height: 86px;
-            resize: vertical;
-            overflow-wrap: anywhere;
-        }
-
         .race-record input[inputmode="numeric"] {
             text-align: right;
             font-variant-numeric: tabular-nums;
         }
 
-        .race-record input:focus, .race-record select:focus, .race-record textarea:focus {
+        .race-record input:focus, .race-record select:focus {
             outline: 2px solid #15803d;
             outline-offset: 1px;
         }
@@ -155,6 +151,32 @@
         const roundDownToHundred = (value) => Math.floor(value / 100) * 100;
         const splitByThree = (value) => roundDownToHundred(Math.floor(value / 3));
         const formatShortDate = (date) => date.replace(/^\d{4}\//, '');
+        // JRAの2026年公式日程に合わせ、旧初期データだけを補正する。
+        const scheduleCorrections = {
+          '東京新聞杯': ['2026/2/8', '2026/2/10'],
+          'スプリングS': ['2026/3/22', '2026/3/15'],
+          'エプソムC': ['2026/6/14', '2026/5/9'],
+          '宝塚記念': ['2026/6/21', '2026/6/14'],
+          'ユニコーンS': ['2026/6/28', '2026/5/2', 'ユニコーンS(京都)'],
+          'ラジオNIKKEI': ['2026/7/5', '2026/6/28'],
+          'プロキオンS': ['2026/7/12', '2026/1/25', 'プロキオンS(京都)'],
+          '函館記念': ['2026/7/19', '2026/6/28'],
+          'クイーンS': ['2026/7/26', '2026/8/2'],
+          '小倉記念': ['2026/8/2', '2026/7/19'],
+          '関屋記念': ['2026/8/9', '2026/7/26'],
+          '新潟2歳S': ['2026/8/30', '2026/8/23'],
+          '小倉2歳S': ['2026/9/6', '2026/8/30', '中京2歳S(中京)'],
+          '神戸新聞杯': ['2026/9/20', '2026/9/21'],
+          'オールカマー': ['2026/9/27', '2026/9/20'],
+          'スプリンターズS': ['2026/10/4', '2026/9/27'],
+          '毎日王冠': ['2026/10/11', '2026/10/4'],
+        };
+        const correctSchedule = (races) => races.map(race => {
+          const correction = scheduleCorrections[race.race.split('(')[0]];
+          return correction && race.date === correction[0]
+            ? { ...race, date: correction[1], race: correction[2] || race.race }
+            : race;
+        }).sort((a, b) => new Date(a.date) - new Date(b.date));
         const roundSettlementToHundred = (value) => {
           const amount = Math.floor(Math.abs(value) / 100) * 100;
           return value < 0 ? -amount : amount;
@@ -225,11 +247,17 @@
           const loadSavedData = () => {
             try {
               const saved = localStorage.getItem('keiba_races_2026');
-              if (saved) return JSON.parse(saved);
+              if (saved) {
+                if (!localStorage.getItem('keiba_schedule_2026_v2')) {
+                  localStorage.setItem('keiba_races_2026_before_schedule_v2', saved);
+                  return correctSchedule(JSON.parse(saved));
+                }
+                return JSON.parse(saved);
+              }
             } catch (e) {
               console.error('データ読み込みエラー:', e);
             }
-            return initialRaces;
+            return correctSchedule(initialRaces);
           };
 
           const [races, setRaces] = useState(loadSavedData);
@@ -237,6 +265,7 @@
           useEffect(() => {
             try {
               localStorage.setItem('keiba_races_2026', JSON.stringify(races));
+              localStorage.setItem('keiba_schedule_2026_v2', '1');
               setLastSaved(new Date());
             } catch (e) {
               console.error('データ保存エラー:', e);
@@ -441,8 +470,8 @@
                             </label>
                           </div>
                           <div className="race-values">
-                            <label>レース名
-                              <textarea aria-label={`${index + 1}件目のレース名`} rows="3" value={race.race} onChange={(e) => updateRace(index, 'race', e.target.value)} />
+                            <label className="race-name">レース名
+                              <input aria-label={`${index + 1}件目のレース名`} type="text" value={race.race} onChange={(e) => updateRace(index, 'race', e.target.value)} />
                             </label>
                             <label>投資額（円）
                               <input aria-label={`${index + 1}件目の投資額`} type="text" inputMode="numeric" pattern="[0-9]*" value={race.investment} onChange={(e) => updateRace(index, 'investment', e.target.value)} />
