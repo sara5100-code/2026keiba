@@ -199,6 +199,46 @@
             ? { ...race, date: correction[1], race: correction[2] || race.race }
             : race;
         }).sort((a, b) => new Date(a.date) - new Date(b.date));
+        const weeklySchedule = {
+          '2026/1/11': 'フェアリーS', '2026/1/18': '日経新春杯', '2026/1/25': 'AJCC',
+          '2026/2/1': '根岸S', '2026/2/8': '小倉日経賞', '2026/2/15': '京都記念', '2026/2/22': 'フェブラリーS',
+          '2026/3/1': '中山記念', '2026/3/8': '弥生賞', '2026/3/15': '金鯱賞', '2026/3/22': '阪神大賞典', '2026/3/29': '高松宮記念',
+          '2026/4/5': '大阪杯', '2026/4/12': '桜花賞', '2026/4/19': '皐月賞', '2026/4/26': 'マイラーズC',
+          '2026/5/3': '天皇賞春', '2026/5/10': 'NHKマイルC', '2026/5/17': 'ヴィクトリアマイル', '2026/5/24': 'オークス', '2026/5/31': '日本ダービー',
+          '2026/6/7': '安田記念', '2026/6/14': '宝塚記念', '2026/6/21': '府中牝馬S', '2026/6/28': 'ラジオNIKKEI賞',
+          '2026/7/5': '北九州記念', '2026/7/12': '七夕賞', '2026/7/19': '小倉記念', '2026/7/26': '関屋記念',
+          '2026/8/2': 'クイーンS', '2026/8/9': 'レパードS', '2026/8/16': '札幌記念', '2026/8/23': 'キーンランドC', '2026/8/30': '新潟記念',
+          '2026/9/6': 'セントウルS', '2026/9/13': 'セントライト記念', '2026/9/20': 'オールカマー', '2026/9/27': 'スプリンターズS',
+          '2026/10/4': '毎日王冠', '2026/10/11': 'アイルランドT', '2026/10/18': '秋華賞', '2026/10/25': '菊花賞',
+          '2026/11/1': '天皇賞秋', '2026/11/8': 'アルゼンチン共和国杯', '2026/11/15': 'エリザベス女王杯', '2026/11/22': 'マイルCS', '2026/11/29': 'ジャパンC',
+          '2026/12/6': 'チャンピオンズC', '2026/12/13': '阪神JF', '2026/12/20': '朝日杯FS', '2026/12/27': '有馬記念',
+        };
+        const isThreePersonRaceDate = (date) => date === '2026/5/31' || date === '2026/12/27';
+        const repairWeeklySchedule = (races) => {
+          const repaired = races.map(race => ({ ...race }));
+          const groups = new Map();
+          repaired.forEach(race => {
+            if (!groups.has(race.date)) groups.set(race.date, []);
+            groups.get(race.date).push(race);
+          });
+          const missing = [];
+          const surplus = [];
+          Object.keys(weeklySchedule).forEach(date => {
+            const expected = isThreePersonRaceDate(date) ? 3 : 1;
+            const entries = groups.get(date) || [];
+            for (let i = entries.length; i < expected; i++) missing.push(date);
+            surplus.push(...entries.slice(0, Math.max(0, entries.length - expected)));
+          });
+          // 旧補正で同日に移動した行を、欠けた週へ戻す。金額・担当者は行ごと保持する。
+          if (repaired.length === 55 && repaired.every(race => weeklySchedule[race.date]) && surplus.length === missing.length) {
+            surplus.forEach(race => {
+              const nearest = missing.reduce((best, date, index) => Math.abs(new Date(date) - new Date(race.date)) < Math.abs(new Date(missing[best]) - new Date(race.date)) ? index : best, 0);
+              race.date = missing.splice(nearest, 1)[0];
+            });
+          }
+          return repaired.map(race => weeklySchedule[race.date] ? { ...race, race: weeklySchedule[race.date] } : race)
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
+        };
         const simplifyRaceName = (name) => name.replace(/[（(](?:東京|京都|中山|阪神|中京|福島|新潟|小倉|札幌|函館|越野|鈴木)[）)]$/, '');
         // 共同購入は日曜日。同格は元の候補を優先し、開催中止日は他場から選ぶ。
         const sundayRaceRules = {
@@ -325,12 +365,16 @@
                   localStorage.setItem('keiba_races_2026_before_sunday_v4', saved);
                   loaded = preferSundayRaces(loaded);
                 }
+                if (!localStorage.getItem('keiba_weekly_schedule_2026_v5')) {
+                  localStorage.setItem('keiba_races_2026_before_weekly_v5', saved);
+                  loaded = repairWeeklySchedule(loaded);
+                }
                 return loaded;
               }
             } catch (e) {
               console.error('データ読み込みエラー:', e);
             }
-            return preferSundayRaces(correctSchedule(initialRaces));
+            return initialRaces.map(race => ({ ...race, race: weeklySchedule[race.date] }));
           };
 
           const [races, setRaces] = useState(loadSavedData);
@@ -340,6 +384,7 @@
               localStorage.setItem('keiba_races_2026', JSON.stringify(races));
               localStorage.setItem('keiba_schedule_2026_v2', '1');
               localStorage.setItem('keiba_sunday_races_2026_v4', '1');
+              localStorage.setItem('keiba_weekly_schedule_2026_v5', '1');
               setLastSaved(new Date());
             } catch (e) {
               console.error('データ保存エラー:', e);
